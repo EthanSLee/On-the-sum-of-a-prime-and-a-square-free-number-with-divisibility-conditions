@@ -37,7 +37,7 @@ def verify(to_me):
             sq_frees.append(k)
     print("Square-frees re-generated.")
 
-		#create a list of exceptional integers using brute force on integers not in verified..
+	#create a list of exceptional integers using brute force on integers not in verified..
     exceptions = []
     for m in range(3, to_me + 1):
         if m not in verified:
