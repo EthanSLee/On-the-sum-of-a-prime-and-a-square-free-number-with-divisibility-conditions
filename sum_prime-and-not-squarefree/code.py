@@ -1,112 +1,88 @@
 from sympy import nextprime, isprime, prevprime, factorint, primerange
 
-def squarefree_odds(a):
-    for p, e in factorint(a).items():
-        if p > 2 and e > 1:
-            return False
-    return True
-
-def coprime(a,b):
-    fa = factorint(a)
-    fb = factorint(b)
-    for p in fa:
-        if p in fb:
-            return False
-    return True
-
-def coprime_weaker(a,b):
-    fa = factorint(a)
-    fb = factorint(b)
-    for p in fa:
-        if p in fb and p > 2:
-            return False
-    return True
-
-def three_progressions():
-    options = set()
-    p = 3
-    while p < 5000:
-        q = nextprime(p)
-        while q < p + 500:
-            if squarefree_odds(p+q) == True and False not in [coprime_weaker(p+q,j[-1]) for j in options]:
-                options.add((p,q,p+q))
-            q = nextprime(q)
-        p = nextprime(p)
-    return options
-
-def remove_excess_powers_of_two(m):
-    while m % 2 == 0:
-        m = m/2
-    return m
-
-def squarefree(a):
+def notsquarefree(a):
     for p, e in factorint(a).items():
         if e > 1:
-            return False
-    return True
-
-def check(w):
-    reps exp_ionc= []
-    pr = 2
-    while pr < w:
-        if squarefree(w - pr) == True and False not in [coprime_weaker(w - pr,j) for j in reps]:
-            reps.append(w-pr)
-            if len(reps) == 3:
-                return True
-        pr = nextprime(pr)
+            return True
     return False
 
-def proc(fromme, upto, preloads):
-    representations = {}
-    prime = prevprime(fromme - 1000)
-    while prime < upto:
-        for a,b,c in preloads:
-            e = 0
-            m = prime + c*(2**e)
-            while m < upto:
-                if m not in representations:
-                    representations[m] = 1
-                else:
-                    representations[m] += 1
-                e += 1
-                m = prime + c*(2**e)
-        prime = nextprime(prime + 500) # Toggle 500 to increase/decrease speed (500 good for width of 10**6..)
+def brute_force_check(n):
+    p = 2
+    while p < n:
+        if notsquarefree(n-p) == True:
+            return True
+        else:
+            p = nextprime(p)
+    return False
 
+def preload1():
+    not_sq_frees = set([])
+    for k in range(2,5*10**5):
+        if notsquarefree(k) == True:
+            not_sq_frees.add(k)
+    return not_sq_frees
+
+def preload2():
+    not_sq_frees = []
+    for k in range(2,10**4):
+        if notsquarefree(k) == True:
+            not_sq_frees.append(k)
+    return not_sq_frees
+
+def verify_ft(from_me, to_me, preload1, preload2):
+    # preload1 should be a set of not-square-free integers <= 10**5
+    # preload2 should be a list of not-square-free integers <= 10**4
+    
+    #populate a set of verified integers..
+    verified = set()
+    np = prevprime(from_me)
+    while np < to_me:
+        for s in preload1:
+            if np + s not in verified:
+                verified.add(np + s)
+        np = nextprime(np + 10**4)
+
+    #create a list of exceptional integers using brute force on integers not in verified..
     exceptions = []
-    w = fromme
-    while w <= upto:
-        if w not in representations or representations[w] < 3:
-            if check(w) == False:
-                exceptions.append(w)
-        w += 2
+    lpl2 = len(preload2)
+    for m in range(from_me, to_me + 1):
+        if m not in verified:
+            found = False
+            ind = 0
+            while found == False:
+                if isprime(m - preload2[ind]) == True:
+                    found = True
+                else:
+                    if ind + 1 < lpl2:
+                        ind += 1
+                    else:
+                        #print(m)
+                        if brute_force_check(m) == False:
+                            exceptions.append(m)
+                        found = True # to ensure the proces terminates!
     return exceptions
 
-tp = three_progressions()
-print("Prime tuples generated.") 
+# Run the code to locate all exceptions on 3 <= n <= 8*10**9. Only exceptions are: 3, 4, 5, 8, 24
+pl1 = preload1()
+pl2 = preload2()
+print("Preloads generated.")
 
-ell = 1
-print(ell, proc(10**5 + 1, ell*10**6,tp))
-ell += 1
-while ell*10**6 <= 4.81*(10**9):
-    print(ell, proc((ell - 1)*(10**6) + 1, ell*(10**6),tp))
-    ell += 1
+print(0, 1, verify_ft(3, 10**7, pl1, pl2))
+for l in range(1,800):
+    print(l, l+1, verify_ft(l*10**7, (l+1)*10**7, pl1, pl2))
 
 """
 Output:
 
-Prime tuples generated.
+Preloads generated.
 
-1 []
-2 []
-3 []
-4 []
-5 []
-6 []
-7 []
-8 []
+0 1 [3, 4, 5, 8, 24]
+1 2 []
+2 3 []
+3 4 []
+4 5 []
+5 6 []
 ...
-4807 []
-4808 []
-4809 []
-4810 []
+798 799 []
+799 800 []
 """
